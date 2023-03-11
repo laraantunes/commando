@@ -30,8 +30,11 @@ if (!empty($params) && !empty($params->command)) {
 }
 $fullPath = getcwd();
 $pathFolders = explode(DIRECTORY_SEPARATOR, $fullPath);
-$path = $pathFolders[count($pathFolders) -1];
-//$path = "longlonglonglonglongfoldername";
+if ($fullPath == '/') {
+    $path = $fullPath;
+} else {
+    $path = $pathFolders[count($pathFolders) -1];
+}
 $_SESSION['path'] = $fullPath;
 
 header('Content-type: application/json');

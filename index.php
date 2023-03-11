@@ -4,7 +4,6 @@
     <link href="https://fonts.googleapis.com/css?family=PT+Mono" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-scrollto"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -24,16 +23,19 @@
 
         body {
             font-family: 'PT Mono', monospace;
-            color: #9370DB;
+            color: #bb51cc;
             background-color: black;
         }
         input {
             font-family: 'PT Mono', monospace;
-            color: #9370DB;
+            color: #bb51cc;
             background-color: black;
             border: none;
             width: 90%;
             height: 20px;
+            outline-style:none;
+            box-shadow:none;
+            border-color:transparent;
         }
         .prompt {
             display: -ms-flexbox;
@@ -60,14 +62,14 @@
     <pre>{{output}}</pre>
     <div class="prompt">
         <span class="before">[<span class="path">{{cmdPath}}</span>] $</span>
-        <input class="content" v-model="cmd" ref="cmd" id="cmd" v-on:keyup.enter='send'/>
+        <input class="content" v-model="cmd" ref="cmd" id="cmd" @keyup.enter='send' @keyup.up='lastCmd' @keyup.ctrl.shift.75='clearCmdAfter' @keyup.ctrl.shift.107='clearCmdAfter'/>
         <span v-if="loading" class="load"><img src="loading.svg"/></span>
     </div>
 </div>
 <script>
 
     function scroll() {
-        setInterval(function() {
+        setTimeout(function() {
             document.body.scrollTop = document.body.scrollHeight;
         }, 50);
     }
@@ -75,7 +77,8 @@
     var robot = "   ,--.\n" +
         "  |__**|\n" +
         "  |//  |\n" +
-        "  /o|__|  [Commando Web Terminal]";
+        "  /o|__|  [Commando Web Terminal]\n\n" +
+        "type help or ? for a list of commands and shortcuts\n";
 
     var vue = new Vue({
         el: '#commando',
@@ -83,30 +86,98 @@
             cmd: '',
             output: robot,
             loading: false,
-            cmdPath: '',
+            cmdPath: 'loading path...',
+            history: [],
+            currentHistory: 0
         },
         methods: {
             send: function() {
-                this.loading = true;
-                this.$http.post('exec.php', {command:this.cmd}).then(function (response) {
-                    this.cmdPath = response.body.path;
-                    this.output += "\n";
-                    $this = this;
-                    if (response.body.output) {
-                        response.body.output.forEach(function(data){
-                            $this.output += data + "\n";
+                this.currentHistory = this.history.length;
+                switch(this.cmd) {
+                    case 'clear':
+                        this.clear();
+                        break;
+                    case 'help':
+                    case '?':
+                        this.help();
+                        break;
+                    case 'history':
+                        this.showHistory();
+                        break;
+                    case 'history -c':
+                        this.clearHistory();
+                        break;
+                    default:
+                        this.loading = true;
+                        this.$http.post('exec.php', {command:this.cmd}).then(function (response) {
+                            this.cmdPath = response.body.path;
+                            if (this.cmd != '') {
+                                this.output += "\n";
+                                this.saveCommand();
+                            }
+                            $this = this;
+                            if (response.body.output) {
+                                response.body.output.forEach(function(data){
+                                    $this.output += data + "\n";
+                                });
+                            }
+                            this.clearCmd();
+        
+                            this.loading = false;
+                            document.getElementById('cmd').focus();
+                            scroll();
                         });
-                    }
-                    this.cmd = '';
-
-                    this.loading = false;
-                    document.getElementById('cmd').focus();
-                    scroll();
-                })
+                }
             },
             init: function() {
                 document.getElementById('cmd').focus();
             },
+            saveCommand() {
+                this.output += "\n[" + this.cmdPath + "] $ " + this.cmd + "\n";
+                this.history.push(this.cmd);
+            },
+            clear: function() {
+                this.saveCommand();
+                this.output = '';
+                this.clearCmd();
+            },
+            clearCmd: function() {
+                this.cmd = '';
+            },
+            clearCmdAfter: function() {
+                this.cmd = this.cmd.substring(0, this.$refs.cmd.selectionStart);
+            },
+            help: function() {
+                this.saveCommand();
+                var help = "> Commands\n" + 
+                    "help or ?: Show this tool\n" + 
+                    "clear: Clear the terminal\n" +
+                    "history: Show the commands history\n" +
+                    "history -c: Clear the commands history\n" + 
+                    "> shortcuts\n" + 
+                    "up key: Show last commands\n" + 
+                    "control + shift + k: Clear after position";
+                this.output += help;
+                this.clearCmd();
+            },
+            showHistory() {
+                this.saveCommand();
+                $this = this;
+                this.history.forEach(function(item, index){
+                    $this.output += ((index > 0) ? "\n" : "") + item;
+                });
+                this.clearCmd();
+            },
+            clearHistory: function() {
+                this.history = [];
+                this.clearCmd();
+            },
+            lastCmd: function() {
+                if (this.currentHistory > 0) {
+                    this.currentHistory--;
+                }
+                this.cmd = this.history[this.currentHistory];
+            }
         },
         mounted() {
             this.init();
