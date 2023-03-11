@@ -24,12 +24,12 @@
 
         body {
             font-family: 'PT Mono', monospace;
-            color: #bb51cc;
+            color: #9370DB;
             background-color: black;
         }
         input {
             font-family: 'PT Mono', monospace;
-            color: #bb51cc;
+            color: #9370DB;
             background-color: black;
             border: none;
             width: 90%;
