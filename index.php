@@ -24,7 +24,7 @@
 
         body {
             font-family: 'PT Mono', monospace;
-            color: mediumpurple;
+            color: #bb51cc;
             background-color: black;
         }
         input {
