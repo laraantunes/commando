@@ -1,0 +1,14 @@
+{
+    "name": "maycowa/commando",
+    "description": "A simple PHP-based web command line terminal emulator",
+    "type": "project",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "Maycow Antunes",
+            "email": "maycowantunes@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
