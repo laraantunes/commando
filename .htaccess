@@ -3,7 +3,7 @@ AuthName "Acesso Restrito - Commando"
 AuthUserFile "d:/Lara/xampp8.2/htdocs/commando/.htpasswd"
 Require valid-user
 
-# Protege o próprio arquivo de senhas contra download
-<Files ".htpasswd">
+# Protege arquivos de configuração, dotfiles e scripts sensíveis contra acesso direto via URL
+<FilesMatch "(^\.|^composer\.(json|lock)$)">
     Require all denied
-</Files>
+</FilesMatch>
