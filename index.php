@@ -3,6 +3,7 @@
 <head>
     <title>Commando</title>
     <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <style>
         html, body {
