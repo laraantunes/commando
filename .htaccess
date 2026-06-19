@@ -1,0 +1,9 @@
+AuthType Basic
+AuthName "Acesso Restrito - Commando"
+AuthUserFile "d:/Lara/xampp8.2/htdocs/commando/.htpasswd"
+Require valid-user
+
+# Protege o próprio arquivo de senhas contra download
+<Files ".htpasswd">
+    Require all denied
+</Files>

@@ -49,7 +49,7 @@
         term.writeln('   ,--.');
         term.writeln('  |__**|');
         term.writeln('  |//  |');
-        term.writeln('  /o|__|  [Commando Web Terminal - Apache Mode]');
+        term.writeln('  /o|__|  [Commando Web Terminal ]');
         term.writeln('');
 
         let currentPath = '';
