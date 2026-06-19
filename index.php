@@ -1,189 +1,175 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>Commando</title>
-    <link href="https://fonts.googleapis.com/css?family=PT+Mono" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <style>
-        * {
-            box-sizing: border-box;
-        }
-        .before {max-width: 16.66%;}
-        .content {width: 75%;}
-        .load {
-            width: 8.33%;
-            float: right;
-            padding: 15px;
-        }
-
-        .before, .content {
-            float: left;
-            padding: 15px;
-        }
-
-        body {
-            font-family: 'PT Mono', monospace;
-            color: #bb51cc;
-            background-color: black;
-        }
-        input {
-            font-family: 'PT Mono', monospace;
-            color: #bb51cc;
-            background-color: black;
-            border: none;
-            width: 90%;
-            height: 20px;
-            outline-style:none;
-            box-shadow:none;
-            border-color:transparent;
-        }
-        .prompt {
-            display: -ms-flexbox;
-            display: -webkit-flex;
-            display: flex;
-
-            -ms-flex-align: center;
-            -webkit-align-items: center;
-            -webkit-box-align: center;
-
-            align-items: center;
-            height: 30px;
-        }
-        .path {
-            display: inline-flex;
-            max-width: 80%;
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #000;
             overflow: hidden;
-            text-overflow: ellipsis;
+        }
+        #terminal {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
-<div id="commando">
-    <pre>{{output}}</pre>
-    <div class="prompt">
-        <span class="before">[<span class="path">{{cmdPath}}</span>] $</span>
-        <input class="content" v-model="cmd" ref="cmd" id="cmd" @keyup.enter='send' @keyup.up='lastCmd' @keyup.ctrl.shift.75='clearCmdAfter' @keyup.ctrl.shift.107='clearCmdAfter'/>
-        <span v-if="loading" class="load"><img src="loading.svg"/></span>
-    </div>
-</div>
-<script>
+    <div id="terminal"></div>
 
-    function scroll() {
-        setTimeout(function() {
-            document.body.scrollTop = document.body.scrollHeight;
-        }, 50);
-    }
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 
-    var robot = "   ,--.\n" +
-        "  |__**|\n" +
-        "  |//  |\n" +
-        "  /o|__|  [Commando Web Terminal]\n\n" +
-        "type help or ? for a list of commands and shortcuts\n";
-
-    var vue = new Vue({
-        el: '#commando',
-        data: {
-            cmd: '',
-            output: robot,
-            loading: false,
-            cmdPath: 'loading path...',
-            history: [],
-            currentHistory: 0
-        },
-        methods: {
-            send: function() {
-                this.currentHistory = this.history.length;
-                switch(this.cmd) {
-                    case 'clear':
-                        this.clear();
-                        break;
-                    case 'help':
-                    case '?':
-                        this.help();
-                        break;
-                    case 'history':
-                        this.showHistory();
-                        break;
-                    case 'history -c':
-                        this.clearHistory();
-                        break;
-                    default:
-                        this.loading = true;
-                        this.$http.post('exec.php', {command:this.cmd}).then(function (response) {
-                            this.cmdPath = response.body.path;
-                            if (this.cmd != '') {
-                                this.output += "\n";
-                                this.saveCommand();
-                            }
-                            $this = this;
-                            if (response.body.output) {
-                                response.body.output.forEach(function(data){
-                                    $this.output += data + "\n";
-                                });
-                            }
-                            this.clearCmd();
+    <script>
+        const term = new Terminal({
+            cursorBlink: true,
+            theme: {
+                background: '#000000',
+                foreground: '#bb51cc',
+                cursor: '#bb51cc',
+                cursorAccent: '#000000',
+                selection: 'rgba(187, 81, 204, 0.3)'
+            },
+            fontFamily: "'PT Mono', monospace"
+        });
         
-                            this.loading = false;
-                            document.getElementById('cmd').focus();
-                            scroll();
-                        });
-                }
-            },
-            init: function() {
-                document.getElementById('cmd').focus();
-            },
-            saveCommand() {
-                this.output += "\n[" + this.cmdPath + "] $ " + this.cmd + "\n";
-                this.history.push(this.cmd);
-            },
-            clear: function() {
-                this.saveCommand();
-                this.output = '';
-                this.clearCmd();
-            },
-            clearCmd: function() {
-                this.cmd = '';
-            },
-            clearCmdAfter: function() {
-                this.cmd = this.cmd.substring(0, this.$refs.cmd.selectionStart);
-            },
-            help: function() {
-                this.saveCommand();
-                var help = "> Commands\n" + 
-                    "help or ?: Show this tool\n" + 
-                    "clear: Clear the terminal\n" +
-                    "history: Show the commands history\n" +
-                    "history -c: Clear the commands history\n" + 
-                    "> shortcuts\n" + 
-                    "up key: Show last commands\n" + 
-                    "control + shift + k: Clear after position";
-                this.output += help;
-                this.clearCmd();
-            },
-            showHistory() {
-                this.saveCommand();
-                $this = this;
-                this.history.forEach(function(item, index){
-                    $this.output += ((index > 0) ? "\n" : "") + item;
+        const fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(document.getElementById('terminal'));
+        fitAddon.fit();
+
+        window.addEventListener('resize', () => { fitAddon.fit(); });
+
+        term.writeln('   ,--.');
+        term.writeln('  |__**|');
+        term.writeln('  |//  |');
+        term.writeln('  /o|__|  [Commando Web Terminal - Apache Mode]');
+        term.writeln('');
+
+        let currentPath = '';
+        let currentInput = '';
+        let isExecuting = false;
+        let commandHistory = [];
+        let historyIndex = -1;
+
+        async function updatePrompt() {
+            try {
+                const res = await fetch('exec.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ command: '__PWD__' }),
+                    headers: { 'Content-Type': 'application/json' }
                 });
-                this.clearCmd();
-            },
-            clearHistory: function() {
-                this.history = [];
-                this.clearCmd();
-            },
-            lastCmd: function() {
-                if (this.currentHistory > 0) {
-                    this.currentHistory--;
-                }
-                this.cmd = this.history[this.currentHistory];
+                const data = await res.json();
+                currentPath = data.path;
+            } catch (e) {
+                currentPath = '~';
             }
-        },
-        mounted() {
-            this.init();
-            this.send();
         }
-    });
-</script>
+
+        function printPrompt() {
+            term.write('\x1b[32m[' + currentPath + ']\x1b[0m $ ');
+        }
+
+        async function executeCommand(cmd) {
+            if (cmd.trim() === 'clear') {
+                term.clear();
+                printPrompt();
+                return;
+            }
+            if (cmd.trim() === '') {
+                printPrompt();
+                return;
+            }
+
+            isExecuting = true;
+            try {
+                const response = await fetch('exec.php', {
+                    method: 'POST',
+                    body: JSON.stringify({ command: cmd }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    term.write(decoder.decode(value));
+                }
+            } catch (err) {
+                term.writeln('\r\n\x1b[31mError executing command.\x1b[0m');
+            }
+            
+            await updatePrompt();
+            isExecuting = false;
+            printPrompt();
+        }
+
+        // Initialize
+        updatePrompt().then(() => {
+            printPrompt();
+        });
+
+        // Handle user input
+        term.onKey(e => {
+            if (isExecuting) return; // Prevent typing while command is running
+
+            // Prevent treating arrow keys as printable characters
+            const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey && e.domEvent.keyCode !== 38 && e.domEvent.keyCode !== 40;
+            
+            if (e.domEvent.keyCode === 13) { // Enter
+                term.write('\r\n');
+                
+                if (currentInput.trim() !== '' && currentInput.trim() !== 'clear') {
+                    commandHistory.push(currentInput.trim());
+                }
+                historyIndex = commandHistory.length;
+
+                executeCommand(currentInput);
+                currentInput = '';
+            } else if (e.domEvent.keyCode === 8) { // Backspace
+                if (currentInput.length > 0) {
+                    currentInput = currentInput.slice(0, -1);
+                    term.write('\b \b');
+                }
+            } else if (e.domEvent.keyCode === 38) { // Up Arrow
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    while (currentInput.length > 0) {
+                        term.write('\b \b');
+                        currentInput = currentInput.slice(0, -1);
+                    }
+                    currentInput = commandHistory[historyIndex];
+                    term.write(currentInput);
+                }
+            } else if (e.domEvent.keyCode === 40) { // Down Arrow
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    while (currentInput.length > 0) {
+                        term.write('\b \b');
+                        currentInput = currentInput.slice(0, -1);
+                    }
+                    currentInput = commandHistory[historyIndex];
+                    term.write(currentInput);
+                } else if (historyIndex === commandHistory.length - 1) {
+                    historyIndex++;
+                    while (currentInput.length > 0) {
+                        term.write('\b \b');
+                        currentInput = currentInput.slice(0, -1);
+                    }
+                }
+            } else if (printable) {
+                currentInput += e.key;
+                term.write(e.key);
+            }
+        });
+    </script>
 </body>
 </html>

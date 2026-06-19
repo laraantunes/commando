@@ -9,6 +9,5 @@
             "email": "maycowantunes@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
-    "require": {}
+    "minimum-stability": "dev"
 }
