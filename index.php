@@ -116,6 +116,7 @@
         // Initialize
         updatePrompt().then(() => {
             printPrompt();
+            term.focus();
         });
 
         // Handle user input
@@ -170,6 +171,39 @@
                 currentInput += e.key;
                 term.write(e.key);
             }
+        });
+
+        // Handle clipboard paste events
+        window.addEventListener('paste', async (e) => {
+            if (isExecuting) return;
+            
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedData = clipboardData.getData('Text');
+            if (!pastedData) return;
+            
+            e.preventDefault();
+            
+            const lines = pastedData.split(/\r?\n/);
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (i > 0) {
+                    term.write('\r\n');
+                    if (currentInput.trim() !== '' && currentInput.trim() !== 'clear') {
+                        commandHistory.push(currentInput.trim());
+                    }
+                    historyIndex = commandHistory.length;
+                    
+                    await executeCommand(currentInput);
+                    currentInput = '';
+                }
+                currentInput += line;
+                term.write(line);
+            }
+        });
+
+        // Focus terminal on container click
+        document.getElementById('terminal').addEventListener('click', () => {
+            term.focus();
         });
     </script>
 </body>
